@@ -69,11 +69,11 @@ juce_add_plugin(
   VERSION
     0.0.0
   COMPANY_NAME
-    "WolfSound"
+    "CallistaSound"
   PLUGIN_MANUFACTURER_CODE
-    Wfsd
+    Casd
   PLUGIN_CODE
-    Trcp
+    Ovtm
   FORMATS
     Standalone
     AU
