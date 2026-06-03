@@ -9,7 +9,6 @@ PluginProcessor::PluginProcessor()
 const juce::String PluginProcessor::getName() const {
   return TREMOLO_PLUGIN_NAME;
 }
-
 bool PluginProcessor::acceptsMidi() const {
   return false;
 }
@@ -103,6 +102,7 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer,
   }
 
   // TODO: update parameters
+  tremolo.setModulationRate(parameters.rate.get());
   // TODO: check for bypass
 
   // apply tremolo
