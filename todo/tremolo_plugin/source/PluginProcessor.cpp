@@ -55,6 +55,17 @@ void PluginProcessor::prepareToPlay(double sampleRate,
   // initialization that you need, e.g., allocate memory.
 
   tremolo.prepare(sampleRate, expectedMaxFramesPerBlock);
+
+  bypassTransitionSmoother.prepare( {
+    .sampleRate = sampleRate,
+    .maximumBlockSize = static_cast<juce::uint32>(expectedMaxFramesPerBlock),
+    .numChannels = static_cast<juce::uint32>(juce::jmax(getTotalNumInputChannels(), getTotalNumOutputChannels())),
+  });
+
+  smoothedGain.reset(sampleRate, 0.05); // 50ms smoothing steps
+  const auto gaindB = parameters.gain.get();
+  const auto gainLinear = juce::Decibels::decibelsToGain(gaindB);
+  smoothedGain.setCurrentAndTargetValue(gainLinear);
 }
 
 void PluginProcessor::releaseResources() {
@@ -62,6 +73,7 @@ void PluginProcessor::releaseResources() {
   // spare memory, etc.
 
   tremolo.reset();
+  bypassTransitionSmoother.reset();
 }
 
 bool PluginProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const {
@@ -90,23 +102,41 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer,
   const auto totalNumInputChannels = getTotalNumInputChannels();
   const auto totalNumOutputChannels = getTotalNumOutputChannels();
 
-  // In case we have more outputs than inputs, this code clears any output
-  // channels that didn't contain input data, (because these aren't
-  // guaranteed to be empty - they may contain garbage).
-  // This is here to avoid people getting screaming feedback
-  // when they first compile a plugin, but obviously you don't need to keep
-  // this code if your algorithm always overwrites all the output channels.
+  // In case we have more outputs than inputs, this code clears any output channels that didn't contain input data,
+  // (because these aren't guaranteed to be empty - they may contain garbage).
+  // This is here to avoid people getting screaming feedback when they first compile a plugin, but obviously you don't
+  // need to keep this code if your algorithm always overwrites all the output channels.
   for (const auto channelToClear :
        std::views::iota(totalNumInputChannels, totalNumOutputChannels)) {
     buffer.clear(channelToClear, 0, buffer.getNumSamples());
   }
 
-  // TODO: update parameters
+  //update parameters
   tremolo.setModulationRate(parameters.rate.get());
-  // TODO: check for bypass
+  bypassTransitionSmoother.setBypass(parameters.bypassed.get());
+  const auto gainLinear = juce::Decibels::decibelsToGain(parameters.gain.get()); // current gain in linear multiplication gain
+  smoothedGain.setTargetValue(gainLinear); // target this new gainLinear multiplication value in 50 ms
+  tremolo.setLfoWaveform(static_cast<Tremolo::LfoWaveform>(parameters.waveform.getIndex()));
+
+  // if plugin is bypassed and transition completed, avoid processing
+  if (parameters.bypassed.get() && !bypassTransitionSmoother.isTransitioning()) {
+    return;
+  }
 
   // apply tremolo
+  bypassTransitionSmoother.setDryBuffer(buffer);
   tremolo.process(buffer);
+  bypassTransitionSmoother.mixToWetBuffer(buffer);
+
+  // apply gain smoothing sample by sample in the current audio block
+  for (int sample = 0; sample < buffer.getNumSamples(); sample++) {
+    const auto gain = smoothedGain.getNextValue(); // next smoothed value
+
+    for (int channel = 0; channel < buffer.getNumChannels(); channel++) {
+      auto* samples = buffer.getWritePointer(channel); // direct access to audio samples for this channel
+      samples[sample] *= gain;
+    }
+  }
 }
 
 bool PluginProcessor::hasEditor() const {
@@ -134,6 +164,9 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes) {
   juce::ignoreUnused(data, sizeInBytes);
 
   // TODO: implement state deserialization from JSON
+}
+  juce::AudioProcessorParameter* PluginProcessor::getBypassParameter() const {
+  return &parameters.bypassed;
 }
 }  // namespace tremolo
 

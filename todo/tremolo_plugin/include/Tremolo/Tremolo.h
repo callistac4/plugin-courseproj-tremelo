@@ -56,6 +56,7 @@ public:
         // set the output sample
         buffer.setSample(channelIndex, frameIndex, outputSample);
       }
+
     }
   }
 

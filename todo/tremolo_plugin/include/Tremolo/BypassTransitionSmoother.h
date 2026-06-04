@@ -57,13 +57,13 @@ class BypassTransitionSmoother {
 public:
   explicit BypassTransitionSmoother(double crossfadeLengthSecondsValue = 0.01)
       : crossfadeLengthSeconds{crossfadeLengthSecondsValue} {
-    jassert(0.0 < crossfadeLengthSeconds);
+    jassert(0.0 < crossfadeLengthSeconds); // alert negative numbers
   }
 
   void prepare(const juce::dsp::ProcessSpec& spec) {
-    sampleRateHz = spec.sampleRate;
+    sampleRateHz = spec.sampleRate; //initialize sample rate
     dryBuffer.setSize(static_cast<int>(spec.numChannels),
-                      static_cast<int>(spec.maximumBlockSize));
+                      static_cast<int>(spec.maximumBlockSize)); // set buffer size
     dryGain.reset(spec.sampleRate, crossfadeLengthSeconds);
     wetGain.reset(spec.sampleRate, crossfadeLengthSeconds);
   }
