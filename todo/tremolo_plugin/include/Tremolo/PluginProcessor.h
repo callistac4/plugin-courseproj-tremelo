@@ -30,11 +30,16 @@ public:
   const juce::String getProgramName(int index) override;
   void changeProgramName(int index, const juce::String& newName) override;
 
+
   void getStateInformation(juce::MemoryBlock& destData) override;
   void setStateInformation(const void* data, int sizeInBytes) override;
 
   juce::AudioProcessorParameter* getBypassParameter() const override;
   juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedGain; //current smoothed gain value
+
+  Parameters& getParameterRefs() noexcept {
+    return parameters;
+  }
 
 private:
   Parameters parameters{*this};

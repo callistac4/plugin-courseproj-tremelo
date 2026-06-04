@@ -10,14 +10,16 @@ TEST(JsonSerializer, SerializeToString) {
   parameters.bypassed = true;
   parameters.waveform = 1;
 
+    // this is the serialization result we are expecting
   const juce::String expectedOutput =
       u8R"({
   "__version__": 1,
-  "pluginName": "Tremolo",
+  "pluginName": "Ocean-Vibe Tremolo",
   "modulationRateHz": 10.0,
   "bypassed": true,
   "modulationWaveform": "Triangle"
 })";
+    // convert to a memory block and guide to the output stream
   juce::MemoryBlock block;
   juce::MemoryOutputStream outputStream{block, false};
 
@@ -26,6 +28,7 @@ TEST(JsonSerializer, SerializeToString) {
 
   const auto result = outputStream.toUTF8().removeCharacters("\r");
 
+    // compare with expected output. This is the actual test.
   EXPECT_EQ(expectedOutput, result);
 }
 
@@ -33,7 +36,7 @@ TEST(JsonSerializer, DeserializeFromString) {
   const juce::String savedParameters =
       u8R"({
   "__version__": 1,
-  "pluginName": "Tremolo",
+  "pluginName": "Ocean-Vibe Tremolo",
   "modulationRateHz": 10.0,
   "bypassed": true,
   "modulationWaveform": "Triangle"
@@ -60,7 +63,7 @@ TEST(JsonSerializer, DontUpdateParametersWhenWaveformNameIsInvalid) {
   const juce::String savedParameters =
       u8R"({
   "__version__": 1,
-  "pluginName": "Tremolo",
+  "pluginName": "Ocean-Vibe Tremolo",
   "modulationRateHz": 10.0,
   "bypassed": true,
   "modulationWaveform": "Foo"

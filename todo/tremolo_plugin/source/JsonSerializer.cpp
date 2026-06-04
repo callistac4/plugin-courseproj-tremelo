@@ -1,17 +1,66 @@
 namespace tremolo {
-void JsonSerializer::serialize(const Parameters& parameters,
-                               juce::OutputStream& output) {
-  juce::ignoreUnused(parameters, output);
+    namespace {
+        struct SerializableParameters {
+            float rate;
+            float gain;
+            bool bypass;
+            juce::String waveform;
 
-  // TODO: serialize parameters to the output stream as JSON
+            static constexpr auto marshallingVersion = 1;
+
+            template <typename Archive, typename T>
+            static void serialise(Archive& archive, T& t) {
+               using namespace juce;
+
+                if (archive.getVersion() != 1) { return; }
+
+                std::string pluginName = TREMOLO_PLUGIN_NAME;
+                archive(named("pluginName", pluginName));
+
+                if (pluginName != TREMOLO_PLUGIN_NAME) { return; }
+
+                archive(named("modulationRateHz", t.rate), named("bypassed", t.bypass),
+                    named("modulationWaveform", t.waveform), named("gain", t.gain));
+
+            }
+        };
+        SerializableParameters from(const tremolo::Parameters& parameters) {
+            return {
+                .rate=parameters.rate.get(),
+                .gain = parameters.gain.get(),
+                .bypass = parameters.bypassed.get(),
+                .waveform = parameters.waveform.getCurrentChoiceName()
+            };
+        }
+    }
+
+void JsonSerializer::serialize(const Parameters& parameters, juce::OutputStream& output) {
+        const auto parametersToSerialize = from(parameters);
+        const auto json = juce::ToVar::convert(parametersToSerialize);
+        if (!json.has_value()) {
+            return;
+        }
+        juce::JSON::writeToStream(output, *json,
+            juce::JSON::FormatOptions{}.withSpacing(juce::JSON::Spacing::multiLine).withMaxDecimalPlaces(2));
 }
 
-juce::Result JsonSerializer::deserialize(juce::InputStream& input,
-                                         Parameters& parameters) {
-  juce::ignoreUnused(input, parameters);
+juce::Result JsonSerializer::deserialize(juce::InputStream& input, Parameters& parameters) {
+        juce::var parsedResult;
+        const auto result = juce::JSON::parse(input.readEntireStreamAsString(), parsedResult);
+        if (result.failed()) { return result; }
 
-  // TODO: deserialize parameters from the JSON input stream
+        const auto parsedParameters = juce::FromVar::convert<SerializableParameters>(parsedResult);
+        if (!parsedParameters.has_value()) {
+            return juce::Result::fail("failed to parse parameters from JSON representation");
+        }
 
-  return juce::Result::fail("not implemented");
+        // check if inputs is valid
+        const auto modulationWaveformIndex = parameters.waveform.choices.indexOf(parsedParameters->waveform);
+        parameters.waveform = modulationWaveformIndex;
+        parameters.rate = parsedParameters->rate;
+        parameters.bypassed = parsedParameters->bypass;
+        parameters.gain = parsedParameters->gain;
+
+        return juce::Result::ok();
 }
 }  // namespace tremolo
