@@ -45,11 +45,24 @@ namespace tremolo {
         juce::StringArray{"Sine", "Triangle"},
         0));
     }
+    // create modulation depth parameter
+    juce::AudioParameterFloat& createDepthParameter(juce::AudioProcessor& processor) {
+      constexpr auto versionHint = 1;
+      return addParameterToProcessor(processor, std::make_unique<juce::AudioParameterFloat>(
+          juce::ParameterID{"depth", versionHint},
+          "Modulation depth",
+          juce::NormalisableRange<float>{0.f, 1.f, 0.01f, 1.f},
+          0.4f,
+          juce::AudioParameterFloatAttributes{}.withStringFromValueFunction([](float value, int) {
+            return juce::String(value, 1);})
+          ));
+    }
     }
 
-  Parameters::Parameters(juce::AudioProcessor &processor) // constructor using a member initializer list
+  Parameters::Parameters(juce::AudioProcessor& processor) // constructor using a member initializer list
     : gain{createGainParameter(processor)},
       rate{createModulationRateParameter(processor)},
       bypassed{createBypassParameter(processor)},
-      waveform{createWaveformParameter(processor)} {}
+      waveform{createWaveformParameter(processor)},
+      modulationDepth{createDepthParameter(processor)} {}
 }  // namespace tremolo

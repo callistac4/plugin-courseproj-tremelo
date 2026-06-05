@@ -35,7 +35,9 @@ public:
   void setStateInformation(const void* data, int sizeInBytes) override;
 
   juce::AudioProcessorParameter* getBypassParameter() const override;
-  juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedGain; //current smoothed gain value
+  juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedGain;
+  juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedRate;
+  juce::SmoothedValue<float, juce::ValueSmoothingTypes::Linear> smoothedDepth;
 
   Parameters& getParameterRefs() noexcept {
     return parameters;

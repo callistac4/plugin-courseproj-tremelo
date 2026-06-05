@@ -7,6 +7,13 @@ public:
     sine = 0,
     triangle = 1,
   };
+
+  static float triangle(float phase) {
+    const auto ft = phase / juce::MathConstants<float>::twoPi;
+    return 4.f * std::abs(ft-std::floor(ft+0.5f))-1.f;
+  }
+
+
   Tremolo() {
     for (auto& lfo : lfos) {
       lfo.setFrequency(5.f, true); // 5 Hz, allow frequency to change immediately
@@ -35,13 +42,16 @@ public:
     }
   }
 
+  void setModulationDepth(float newModulationDepth) {
+    modulationDepth = juce::jlimit(0.0f, 1.0f, newModulationDepth);
+  }
+
 
   void process(juce::AudioBuffer<float>& buffer) noexcept {
     updateLfoWaveform(); // implement setLfoWaveform between process blocks
     // frame-wise processing
     for (const auto frameIndex : std::views::iota(0, buffer.getNumSamples())) {
       const auto lfoValue = getNextLfoValue(); //generate LFO value
-      constexpr auto modulationDepth = 0.4f;
       const auto modulationValue = (modulationDepth * lfoValue) + 1.f;
 
       // for each channel sample in the frame (channel index) currently being processed
@@ -71,11 +81,7 @@ private:
   float getNextLfoValue() {
     return lfos[juce::toUnderlyingType(currentLfo)].processSample(0.f);
   }
-
-  static float triangle(float phase) {
-    const auto ft = phase / juce::MathConstants<float>::twoPi;
-    return 4.f * std::abs(ft-std::floor(ft+0.5f))-1.f;
-  }
+  float modulationDepth = 0.4f;
 
   std::array<juce::dsp::Oscillator<float>, 2u> lfos {
     juce::dsp::Oscillator<float>{[](auto phase) {return std::sin(phase);}},

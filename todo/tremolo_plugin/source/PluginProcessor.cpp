@@ -113,10 +113,15 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
   //update parameters
   tremolo.setModulationRate(parameters.rate.get());
+  tremolo.setModulationDepth(parameters.modulationDepth.get());
+  tremolo.setLfoWaveform(static_cast<Tremolo::LfoWaveform>(parameters.waveform.getIndex()));
+
+  //apply smoothing
   bypassTransitionSmoother.setBypass(parameters.bypassed.get());
   const auto gainLinear = juce::Decibels::decibelsToGain(parameters.gain.get()); // current gain in linear multiplication gain
+
   smoothedGain.setTargetValue(gainLinear); // target this new gainLinear multiplication value in 50 ms
-  tremolo.setLfoWaveform(static_cast<Tremolo::LfoWaveform>(parameters.waveform.getIndex()));
+
 
   // if plugin is bypassed and transition completed, avoid processing
   if (parameters.bypassed.get() && !bypassTransitionSmoother.isTransitioning()) {
@@ -140,12 +145,12 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 }
 
 bool PluginProcessor::hasEditor() const {
-  return false;
+  return true;
 }
 
 // This function will be called to create an instance of the editor
 juce::AudioProcessorEditor* PluginProcessor::createEditor() {
-  return nullptr;
+  return new PluginEditor(*this);
 }
 
 void PluginProcessor::getStateInformation(juce::MemoryBlock& destData) {      // save plugin state
@@ -160,7 +165,7 @@ void PluginProcessor::setStateInformation(const void* data, int sizeInBytes) {  
   if (result.failed()) { // simple development error handling strategy
     DBG(result.getErrorMessage());
   }
-  
+
   bypassTransitionSmoother.setBypassForced(parameters.bypassed.get());
 }
   juce::AudioProcessorParameter* PluginProcessor::getBypassParameter() const {

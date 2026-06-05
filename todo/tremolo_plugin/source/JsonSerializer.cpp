@@ -5,6 +5,7 @@ namespace tremolo {
             float gain;
             bool bypass;
             juce::String waveform;
+            float modulationDepth;
 
             static constexpr auto marshallingVersion = 1;
 
@@ -20,16 +21,18 @@ namespace tremolo {
                 if (pluginName != TREMOLO_PLUGIN_NAME) { return; }
 
                 archive(named("modulationRateHz", t.rate), named("bypassed", t.bypass),
-                    named("modulationWaveform", t.waveform), named("gain", t.gain));
+                    named("modulationWaveform", t.waveform), named("gain", t.gain),
+                    named("modulationDepth", t.modulationDepth));
 
             }
         };
         SerializableParameters from(const tremolo::Parameters& parameters) {
             return {
-                .rate=parameters.rate.get(),
+                .rate = parameters.rate.get(),
                 .gain = parameters.gain.get(),
                 .bypass = parameters.bypassed.get(),
-                .waveform = parameters.waveform.getCurrentChoiceName()
+                .waveform = parameters.waveform.getCurrentChoiceName(),
+                .modulationDepth = parameters.modulationDepth.get(),
             };
         }
     }
@@ -37,9 +40,7 @@ namespace tremolo {
 void JsonSerializer::serialize(const Parameters& parameters, juce::OutputStream& output) {
         const auto parametersToSerialize = from(parameters);
         const auto json = juce::ToVar::convert(parametersToSerialize);
-        if (!json.has_value()) {
-            return;
-        }
+        if (!json.has_value()) { return; }
         juce::JSON::writeToStream(output, *json,
             juce::JSON::FormatOptions{}.withSpacing(juce::JSON::Spacing::multiLine).withMaxDecimalPlaces(2));
 }
@@ -56,10 +57,15 @@ juce::Result JsonSerializer::deserialize(juce::InputStream& input, Parameters& p
 
         // check if inputs is valid
         const auto modulationWaveformIndex = parameters.waveform.choices.indexOf(parsedParameters->waveform);
+        if (modulationWaveformIndex < 0) {
+            return juce::Result::fail("failed to find waveform index in JSON representation" +
+                parameters.waveform.choices.joinIntoString(", "));
+        }
         parameters.waveform = modulationWaveformIndex;
         parameters.rate = parsedParameters->rate;
         parameters.bypassed = parsedParameters->bypass;
         parameters.gain = parsedParameters->gain;
+        parameters.modulationDepth = parsedParameters->modulationDepth;
 
         return juce::Result::ok();
 }
