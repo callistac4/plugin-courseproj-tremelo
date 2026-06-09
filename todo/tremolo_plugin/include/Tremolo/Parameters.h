@@ -9,6 +9,7 @@ struct Parameters { // create parameter, add it to processor, store reference in
   juce::AudioParameterBool& bypassed;
   juce::AudioParameterChoice& waveform;
   juce::AudioParameterFloat& modulationDepth;
+  juce::AudioParameterChoice& looks;
 
   // avoid accidental copies (dangling references) by using declare noncopyable below
   JUCE_DECLARE_NON_COPYABLE(Parameters)

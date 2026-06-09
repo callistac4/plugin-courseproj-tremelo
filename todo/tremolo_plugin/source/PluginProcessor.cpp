@@ -122,7 +122,6 @@ void PluginProcessor::processBlock(juce::AudioBuffer<float>& buffer,
 
   smoothedGain.setTargetValue(gainLinear); // target this new gainLinear multiplication value in 50 ms
 
-
   // if plugin is bypassed and transition completed, avoid processing
   if (parameters.bypassed.get() && !bypassTransitionSmoother.isTransitioning()) {
     return;

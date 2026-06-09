@@ -25,7 +25,7 @@ namespace tremolo {
             auto& triangle = shapes[juce::toUnderlyingType(LfoWaveform::triangle)];
 
             const int strokeWidthInt = static_cast<int> (strokeWidth);
-            const auto halfHeight = static_cast<float>(getHeight() / 2);
+            const auto halfHeight = static_cast<float>(getHeight()) * 0.5f;
             const auto amplitude = halfHeight - strokeWidth/2;
 
             sine.startNewSubPath(0.f, halfHeight);
@@ -42,10 +42,19 @@ namespace tremolo {
             }
         }
 
+        void setStrokeWidth(float newWidth) {
+            newWidth = juce::jlimit(0.0f, 10.0f, newWidth);
+
+           if (std::abs(strokeWidth - newWidth) > 0.001f) {
+                strokeWidth = newWidth;
+                resized();
+                repaint();
+            }
+        }
+
     private:
         LfoWaveform currentLfo = LfoWaveform::sine;
         std::array<juce::Path, 2> shapes;
-
         float strokeWidth = 4.0f;
     };
 }

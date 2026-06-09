@@ -57,6 +57,16 @@ namespace tremolo {
             return juce::String(value, 1);})
           ));
     }
+
+    //create looksAndFeel parameter
+    juce::AudioParameterChoice& createLooksParameter(juce::AudioProcessor& processor) {
+      constexpr auto versionHint = 1;
+      return addParameterToProcessor(processor, std::make_unique<juce::AudioParameterChoice>(
+        juce::ParameterID{"looks", versionHint},
+        "LookAndFeel",
+        juce::StringArray{"LookAndFeel_V1", "LookAndFeel_V2", "LookAndFeel_V3", "LookAndFeel_V4", "CustomLookAndFeel"},
+        4));
+    }
     }
 
   Parameters::Parameters(juce::AudioProcessor& processor) // constructor using a member initializer list
@@ -64,5 +74,6 @@ namespace tremolo {
       rate{createModulationRateParameter(processor)},
       bypassed{createBypassParameter(processor)},
       waveform{createWaveformParameter(processor)},
-      modulationDepth{createDepthParameter(processor)} {}
+      modulationDepth{createDepthParameter(processor)},
+      looks{createLooksParameter(processor)} {}
 }  // namespace tremolo
